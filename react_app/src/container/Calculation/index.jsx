@@ -55,7 +55,7 @@ class Calculation extends Component {
         b: 0.2,
         c: 0.1 + 0.2
       }
-    }
+    };
   }
 
   funA(e) {
@@ -85,7 +85,7 @@ class Calculation extends Component {
   add() {
     const { numObj } = this.state;
     const { type } = numObj;
-    switch(type) {
+    switch (type) {
       case "+":
         numObj.c = floatTool.add(numObj.a, numObj.b);
         break;
@@ -111,14 +111,20 @@ class Calculation extends Component {
     const { numObj } = this.state;
     return (
       <div className="page-calculation">
-        <div className="detail-content markdown-body" dangerouslySetInnerHTML={{__html: this.state.demoHtml}}></div>
+        <div className="detail-content markdown-body" dangerouslySetInnerHTML={{ __html: this.state.demoHtml }}></div>
         <div>
           <input type="number" value={numObj.a} onChange={e => this.funA(e)} />
           <input type="text" value={numObj.type} onChange={e => this.funType(e)} />
           <input type="number" value={numObj.b} onChange={e => this.funB(e)} />
           =
           <input type="text" readOnly value={numObj.c} />
-          <button onClick={() => {this.add()}}>计算</button>
+          <button
+            onClick={() => {
+              this.add();
+            }}
+          >
+            计算
+          </button>
         </div>
       </div>
     );
@@ -127,26 +133,25 @@ class Calculation extends Component {
 
 export default Calculation;
 
-
 /**
  *  ** method **
  *  add / subtract / multiply /divide
  */
-const floatTool = function() {
+const floatTool = (function() {
   /**
    * 判断obj是否为一个整数
    * @param {number} number
    */
-  const isInteger = (number) => {
+  const isInteger = number => {
     return Math.floor(number) === number;
-  }
+  };
 
   /**
    * 将一个浮点数转成整数，返回整数和倍数。如 3.14 >> 314，倍数是 100
    * @param {number} floatNumber 小数
    * @return {object} {times:100, num: 314}
    */
-  const toInteger = (floatNumber) => {
+  const toInteger = floatNumber => {
     const res = { multiple: 1, number: 0 };
     // 整数时不处理
     if (isInteger(floatNumber)) {
@@ -162,8 +167,8 @@ const floatTool = function() {
     return {
       multiple: numberPow,
       number: intNumber
-    }
-  }
+    };
+  };
 
   const operation = (num1, num2, type) => {
     const o1 = toInteger(num1);
@@ -175,7 +180,7 @@ const floatTool = function() {
     // 取最大倍数
     const max = m1 > m2 ? m1 : m2;
     let res = null;
-    switch(type) {
+    switch (type) {
       case "add":
         if (m1 === m2) {
           // 两个小数位数相同
@@ -201,12 +206,15 @@ const floatTool = function() {
         res = (n1 * n2) / (m1 * m2);
         return res;
       case "divide":
-        res = (n1 / n2) / (m1 / m2);
-        return res;
+        return (res = (function() {
+          const r1 = n1 / n2;
+          const r2 = m2 / m1;
+          return operation(r1, r2, "multiply");
+        })());
       default:
         return res;
     }
-  }
+  };
 
   const add = (num1, num2) => operation(num1, num2, "add");
   const subtract = (num1, num2) => operation(num1, num2, "subtract");
@@ -218,10 +226,98 @@ const floatTool = function() {
     subtract,
     multiply,
     divide
-  }
-}();
+  };
+})();
 
 // console.log(floatTool.add(0.1, 0.2) === 0.3);
 // console.log(floatTool.subtract(0.3, 0.2));
 console.log(floatTool.divide(0.69, 10));
 
+/**
+ * 精度溢出处理
+ * @param amount/a {Number}   要格式化的数字
+ * @param base/b   {Number}   格式化基数,默认为100
+ * @param type   {String}     格式化类型，默认除div
+ * @returns {number}
+ *
+ */
+// function formatNumAccuracy(amount, base, type) {
+//   // 默认值
+//   let a = Number(amount) ? Number(amount) : 0;
+//   let b = Number(base) ? Number(base) : 0;
+//   type = type ? type : "div";
+
+//   switch (type) {
+//     case "add": {
+//       // 加 api.add(0.1, 0.2),例1.1+0.1
+//       let c, d, e;
+//       try {
+//         c = a.toString().split(".")[1].length;
+//       } catch (f) {
+//         c = 0;
+//       }
+//       try {
+//         d = b.toString().split(".")[1].length;
+//       } catch (f) {
+//         d = 0;
+//       }
+//       e = Math.pow(10, Math.max(c, d));
+//       return (a * e + b * e) / e;
+//     }
+//     case "sub": {
+//       // 减 api.sub(0.1, 0.2)，-0.09999999 - 0.00000001
+//       let c, d, e;
+//       try {
+//         c = a.toString().split(".")[1].length;
+//       } catch (f) {
+//         c = 0;
+//       }
+//       try {
+//         d = b.toString().split(".")[1].length;
+//       } catch (f) {
+//         d = 0;
+//       }
+//       e = Math.pow(10, Math.max(c, d));
+//       return (a * e - b * e) / e;
+//     }
+//     case "mul": {
+//       // 乘 api.mul(0.1, 0.2),例1.1*100
+//       let c = 0,
+//         d = a.toString(),
+//         e = b.toString();
+//       try {
+//         c += d.split(".")[1].length;
+//       } catch (f) {
+//         null;
+//       }
+//       try {
+//         c += e.split(".")[1].length;
+//       } catch (f) {
+//         null;
+//       }
+//       return (Number(d.replace(".", "")) * Number(e.replace(".", ""))) / Math.pow(10, c);
+//     }
+//     case "div": {
+//       // 除 api.div(0.1, 0.2),例0.12345/0.000001，0.000001 / 0.0001
+//       var c,
+//         d,
+//         e = 0,
+//         f = 0;
+//       try {
+//         e = a.toString().split(".")[1].length;
+//       } catch (g) {
+//         null;
+//       }
+//       try {
+//         f = b.toString().split(".")[1].length;
+//       } catch (g) {
+//         null;
+//       }
+//       c = Number(a.toString().replace(".", ""));
+//       d = Number(b.toString().replace(".", ""));
+//       return (c / d) * Math.pow(10, f - e);
+//     }
+//     default:
+//       return 0;
+//   }
+// }
