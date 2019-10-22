@@ -2,11 +2,226 @@
  * calculation: javascript在计算浮点数（小数）不准确，解决方案
  */
 import React, { Component } from "react";
+import MarkdownIt from "markdown-it";
+import "./style.scss";
 
 class Calculation extends Component {
+  constructor(props) {
+    super(props);
+    const mdStr = `
+# 解决JS浮点数运算结果不精确的Bug
+
+### 一. 常见例子
+
+\`\`\`
+// 加法
+0.1 + 0.2 = 0.30000000000000004
+0.1 + 0.7 = 0.7999999999999999
+0.2 + 0.4 = 0.6000000000000001
+
+// 减法
+0.3 - 0.2 = 0.09999999999999998
+1.5 - 1.2 = 0.30000000000000004
+
+// 乘法
+0.8 * 3 = 2.4000000000000004
+19.9 * 100 = 1989.9999999999998
+
+// 除法
+0.3 / 0.1 = 2.9999999999999996
+0.69 / 10 = 0.06899999999999999
+
+// 比较
+0.1 + 0.2 === 0.3 // false
+\`\`\`
+
+### 二. 解决办法
+
+[1] 引用类库
+
+  - Math.js
+  - decimal.js
+  - big.js
+
+[2] 自定义一个转换和处理函数
+
+    `;
+    this.md = new MarkdownIt();
+    this.state = {
+      demoHtml: this.md.render(mdStr),
+      numObj: {
+        type: "+",
+        a: 0.1,
+        b: 0.2,
+        c: 0.1 + 0.2
+      }
+    }
+  }
+
+  funA(e) {
+    const { numObj } = this.state;
+    numObj.a = e.target.value;
+    this.setState({
+      numObj
+    });
+  }
+
+  funB(e) {
+    const { numObj } = this.state;
+    numObj.b = e.target.value;
+    this.setState({
+      numObj
+    });
+  }
+
+  funType(e) {
+    const { numObj } = this.state;
+    numObj.type = e.target.value;
+    this.setState({
+      numObj
+    });
+  }
+
+  add() {
+    const { numObj } = this.state;
+    const { type } = numObj;
+    switch(type) {
+      case "+":
+        numObj.c = floatTool.add(numObj.a, numObj.b);
+        break;
+      case "-":
+        numObj.c = floatTool.subtract(numObj.a, numObj.b);
+        break;
+      case "*":
+        numObj.c = floatTool.multiply(numObj.a, numObj.b);
+        break;
+      case "/":
+        numObj.c = floatTool.divide(numObj.a, numObj.b);
+        break;
+      default:
+        alert("计算类型只有'+-*/'");
+        break;
+    }
+    this.setState({
+      numObj
+    });
+  }
+
   render() {
-    return <div>Calculation</div>;
+    const { numObj } = this.state;
+    return (
+      <div className="page-calculation">
+        <div className="detail-content markdown-body" dangerouslySetInnerHTML={{__html: this.state.demoHtml}}></div>
+        <div>
+          <input type="number" value={numObj.a} onChange={e => this.funA(e)} />
+          <input type="text" value={numObj.type} onChange={e => this.funType(e)} />
+          <input type="number" value={numObj.b} onChange={e => this.funB(e)} />
+          =
+          <input type="text" readOnly value={numObj.c} />
+          <button onClick={() => {this.add()}}>计算</button>
+        </div>
+      </div>
+    );
   }
 }
 
 export default Calculation;
+
+
+/**
+ *  ** method **
+ *  add / subtract / multiply /divide
+ */
+const floatTool = function() {
+  /**
+   * 判断obj是否为一个整数
+   * @param {number} number
+   */
+  const isInteger = (number) => {
+    return Math.floor(number) === number;
+  }
+
+  /**
+   * 将一个浮点数转成整数，返回整数和倍数。如 3.14 >> 314，倍数是 100
+   * @param {number} floatNumber 小数
+   * @return {object} {times:100, num: 314}
+   */
+  const toInteger = (floatNumber) => {
+    const res = { multiple: 1, number: 0 };
+    // 整数时不处理
+    if (isInteger(floatNumber)) {
+      res.number = floatNumber;
+      return res;
+    }
+    // 如果是小数时处理逻辑 => 取小数点后位长度作为次幂
+    const floatStr = floatNumber + "";
+    const dotPosition = floatStr.indexOf(".");
+    const dotAfterLen = floatStr.substr(dotPosition + 1).length;
+    const numberPow = Math.pow(10, dotAfterLen);
+    const intNumber = parseInt(floatNumber * numberPow, 10);
+    return {
+      multiple: numberPow,
+      number: intNumber
+    }
+  }
+
+  const operation = (num1, num2, type) => {
+    const o1 = toInteger(num1);
+    const o2 = toInteger(num2);
+    const n1 = o1.number;
+    const n2 = o2.number;
+    const m1 = o1.multiple;
+    const m2 = o2.multiple;
+    // 取最大倍数
+    const max = m1 > m2 ? m1 : m2;
+    let res = null;
+    switch(type) {
+      case "add":
+        if (m1 === m2) {
+          // 两个小数位数相同
+          res = n1 + n2;
+        } else if (m1 > m2) {
+          // m1小数位大于m2, 算出差位，补0使2个数字小数位对其
+          res = n1 + n2 * (m1 / m2);
+        } else {
+          // m1小数位小于m2, 算出差位，补0使2个数字小数位对其
+          res = n1 * (m2 / m1) + n2;
+        }
+        return res / max;
+      case "subtract":
+        if (m1 === m2) {
+          res = n1 - n2;
+        } else if (m1 > m2) {
+          res = n1 - n2 * (m1 / m2);
+        } else {
+          res = n1 * (m2 / m1) - n2;
+        }
+        return res / max;
+      case "multiply":
+        res = (n1 * n2) / (m1 * m2);
+        return res;
+      case "divide":
+        res = (n1 / n2) / (m1 / m2);
+        return res;
+      default:
+        return res;
+    }
+  }
+
+  const add = (num1, num2) => operation(num1, num2, "add");
+  const subtract = (num1, num2) => operation(num1, num2, "subtract");
+  const multiply = (num1, num2) => operation(num1, num2, "multiply");
+  const divide = (num1, num2) => operation(num1, num2, "divide");
+
+  return {
+    add,
+    subtract,
+    multiply,
+    divide
+  }
+}();
+
+// console.log(floatTool.add(0.1, 0.2) === 0.3);
+// console.log(floatTool.subtract(0.3, 0.2));
+console.log(floatTool.divide(0.69, 10));
+
