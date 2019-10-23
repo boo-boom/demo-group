@@ -2,6 +2,9 @@
  * calculation: javascript在计算浮点数（小数）不准确，解决方案
  */
 import React, { Component } from "react";
+// import * as math from "mathjs";
+import { create, all } from 'mathjs';
+
 import MarkdownIt from "markdown-it";
 import "./style.scss";
 
@@ -56,6 +59,11 @@ class Calculation extends Component {
         c: 0.1 + 0.2
       }
     };
+
+    // mathjs用法
+    const math = create(all, { number: 'BigNumber' });
+    console.log(math.number(math.evaluate('0.1 + 0.2')));
+    // console.log(math.format(math.chain(math.bignumber(0.1)).add(math.bignumber(0.2)).done()));
   }
 
   funA(e) {
@@ -118,13 +126,7 @@ class Calculation extends Component {
           <input type="number" value={numObj.b} onChange={e => this.funB(e)} />
           =
           <input type="text" readOnly value={numObj.c} />
-          <button
-            onClick={() => {
-              this.add();
-            }}
-          >
-            计算
-          </button>
+          <button onClick={() => { this.add() }} > 计算 </button>
         </div>
       </div>
     );
@@ -229,9 +231,64 @@ const floatTool = (function() {
   };
 })();
 
+// 多层加减精度计算
+// const floatTool1 = (function() {
+//   const operation = (nums, type) => {
+//     const dArr = [];
+//     let dotLen = 0,
+//         multiple = 0,
+//         res = 0;
+//     for (let i = 0; i < nums.length; i++) {
+//       try {
+//         dotLen = nums[i].toString().split(".")[1].length;
+//       } catch (err) {
+//         dotLen = 0;
+//       }
+//       dArr.push(dotLen);
+//     }
+//     multiple = Math.pow(10, Math.max.apply(this, dArr));
+
+//     const div_lens = [], div_nums = [];
+//     for (let i = 0; i < nums.length; i++) {
+//       if (type === "add") {
+//         res += nums[i] * multiple;
+//       } else if (type === "subtract") {
+//         if (i === 0) {
+//           res += nums[0] * multiple;
+//         } else {
+//           res -= nums[i] * multiple;
+//         }
+//       }
+
+//       // else if (type === "multiply") {
+//       //   if (i === 0) {
+//       //     res = nums[0] * multiple;
+//       //   } else {
+//       //     res = res * (nums[i] * multiple);
+//       //   }
+//       // }
+//     }
+
+//     // if (type === "multiply") {
+//     //   return res / Math.pow(10, dArr.length);
+//     // }
+//     return res / multiple;
+//   };
+
+//   const add = nums => operation(nums, "add");
+//   const subtract = nums => operation(nums, "subtract");
+
+//   return {
+//     add,
+//     subtract,
+//     multiply,
+//     divide
+//   };
+// })();
+
 // console.log(floatTool.add(0.1, 0.2) === 0.3);
 // console.log(floatTool.subtract(0.3, 0.2));
-console.log(floatTool.divide(0.69, 10));
+// console.log(floatTool1.divide([0.8, 3, 0.1, 0.2]));
 
 /**
  * 精度溢出处理
